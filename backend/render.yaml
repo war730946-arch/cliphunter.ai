@@ -1,0 +1,26 @@
+# ─── ClipHunter AI — Render Blueprint ────────────────────
+# Deploy the backend on Render's free tier (no credit card needed)
+# Uses Docker because we need FFmpeg + Vosk speech-to-text
+# ────────────────────────────────────────────────────────
+
+services:
+  - type: web
+    name: cliphunter-ai-backend
+    env: docker
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: PORT
+        value: 5000
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        value: file:./prisma/dev.db
+      - key: JWT_SECRET
+        sync: false  # You'll set this manually
+      - key: JWT_EXPIRES_IN
+        value: 7d
+      - key: VOSK_MODEL
+        value: vosk-model-small-en-us-0.15
+      - key: LOG_LEVEL
+        value: info
+    healthCheckPath: /health

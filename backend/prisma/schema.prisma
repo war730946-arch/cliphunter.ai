@@ -1,0 +1,105 @@
+// ─── ClipHunter AI — Prisma Schema ───────────────────────
+// SQLite — lightweight, file-based, zero config
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Users ───────────────────────────────────────────────
+model User {
+  id            String   @id @default(uuid())
+  name          String?
+  email         String   @unique
+  password_hash String
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+
+  videos      Video[]
+  highlights  Highlight[]
+  clips       Clip[]
+  transcripts Transcript[]
+  jobs        Job[]
+}
+
+// ─── Videos ───────────────────────────────────────────────
+model Video {
+  id         String   @id @default(uuid())
+  user_id    String
+  source_url String
+  file_url   String?
+  title      String?
+  thumbnail  String?
+  duration   Float?
+  status     String   @default("pending") // pending | processing | ready | failed
+  created_at DateTime @default(now())
+
+  user         User           @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  transcripts  Transcript[]
+  highlights   Highlight[]
+  clips        Clip[]
+  jobs         Job[]
+}
+
+// ─── Transcripts ──────────────────────────────────────────
+model Transcript {
+  id         String   @id @default(uuid())
+  video_id   String
+  content    String
+  language   String   @default("en")
+  created_at DateTime @default(now())
+
+  video Video @relation(fields: [video_id], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  user_id String
+}
+
+// ─── Highlights ───────────────────────────────────────────
+model Highlight {
+  id         String   @id @default(uuid())
+  video_id   String
+  start_time Float
+  end_time   Float
+  score      Float    @default(0)
+  summary    String?
+  created_at DateTime @default(now())
+
+  video Video @relation(fields: [video_id], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  user_id String
+  clips  Clip[]
+}
+
+// ─── Clips ────────────────────────────────────────────────
+model Clip {
+  id           String   @id @default(uuid())
+  video_id     String
+  highlight_id String?
+  file_url     String?
+  duration     Float?
+  size         Float?   // file size in bytes
+  created_at   DateTime @default(now())
+
+  video     Video      @relation(fields: [video_id], references: [id], onDelete: Cascade)
+  highlight Highlight? @relation(fields: [highlight_id], references: [id], onDelete: SetNull)
+  user      User       @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  user_id   String
+}
+
+// ─── Jobs ─────────────────────────────────────────────────
+model Job {
+  id         String   @id @default(uuid())
+  video_id   String
+  type       String   // transcribe | detect_highlights | generate_clip
+  status     String   @default("pending") // pending | running | completed | failed
+  progress   Float    @default(0)
+  created_at DateTime @default(now())
+
+  video Video @relation(fields: [video_id], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  user_id String
+}

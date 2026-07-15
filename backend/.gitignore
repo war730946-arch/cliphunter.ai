@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.env
+uploads/*
+!uploads/.gitkeep
+temp/*
+!temp/.gitkeep
+generated-clips/*
+!generated-clips/.gitkeep

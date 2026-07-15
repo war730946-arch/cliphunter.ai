@@ -1,0 +1,9 @@
+node_modules
+dist
+.env
+uploads
+temp
+generated-clips
+.git
+.gitignore
+*.md
