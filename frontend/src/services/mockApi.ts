@@ -139,35 +139,50 @@ function mockResponse(config: InternalAxiosRequestConfig, status: number, data: 
 
 // ─── Route handler ───────────────────────────────────────
 async function handleMockRoute(config: InternalAxiosRequestConfig): Promise<any> {
-  const url = config.url || "";
+  let url = config.url || "";
   const method = (config.method || "get").toUpperCase();
 
-  // Only intercept /api/* routes
-  if (!url.startsWith("/api")) return;
+  // The `config.url` contains the path relative to baseURL.
+  // If baseURL is "http://localhost:5000/api", then url = "/auth/register"
+  // If baseURL is "https://api.example.com", then url = "/auth/register"
+  // Either way, the API routes we need to match start with:
+  // /auth, /videos, /clips, /admin, /download
+  // BUT if the baseURL doesn't include "/api", we also need to handle
+  // routes like /api/auth/register (in case of development config).
+  
+  // Strip /api prefix if present (handles both dev and prod baseURL configs)
+  if (url.startsWith("/api")) {
+    url = url.replace("/api", "");
+  }
+
+  // Only intercept known API routes
+  const isApiRoute = url.startsWith("/auth") || url.startsWith("/videos") ||
+    url.startsWith("/clips") || url.startsWith("/admin") || url.startsWith("/download");
+  if (!isApiRoute) return;
 
   await delay();
 
   // ── Auth ──
-  if (url === "/api/auth/register" && method === "POST") {
+  if (url === "/auth/register" && method === "POST") {
     return mockResponse(config, 201, {
       status: "success",
       data: { user: { ...mockUser, id: generateId("user") } },
       token: "mock_token_demo",
     });
   }
-  if (url === "/api/auth/login" && method === "POST") {
+  if (url === "/auth/login" && method === "POST") {
     return mockResponse(config, 200, {
       status: "success",
       data: { user: mockUser },
       token: "mock_token_demo",
     });
   }
-  if (url === "/api/auth/me" && method === "GET") {
+  if (url === "/auth/me" && method === "GET") {
     return mockResponse(config, 200, { status: "success", data: { user: mockUser } });
   }
 
   // ── Videos ──
-  if (url === "/api/videos" && method === "POST") {
+  if (url === "/videos" && method === "POST") {
     const isMultipart = (config.headers?.["Content-Type"] as string || "").includes("multipart");
     let source_url = "";
     let title = null;
@@ -196,12 +211,12 @@ async function handleMockRoute(config: InternalAxiosRequestConfig): Promise<any>
     });
   }
 
-  if (url === "/api/videos" && method === "GET") {
+  if (url === "/videos" && method === "GET") {
     return mockResponse(config, 200, { status: "success", data: { videos: mockVideos, total: mockVideos.length } });
   }
 
-  if (url.startsWith("/api/videos/") && method === "GET") {
-    const videoId = url.replace("/api/videos/", "").split("/")[0];
+  if (url.startsWith("/videos/") && method === "GET") {
+    const videoId = url.replace("/videos/", "").split("/")[0];
     const video = mockVideos.find((v) => v.id === videoId);
     if (!video) return mockResponse(config, 404, { status: "error", message: "Video not found" });
 
@@ -235,22 +250,22 @@ async function handleMockRoute(config: InternalAxiosRequestConfig): Promise<any>
     });
   }
 
-  if (url.match(/^\/api\/videos\/[\w-]+\/analyze$/) && method === "POST") {
+  if (url.match(/^\/videos\/[\w-]+\/analyze$/) && method === "POST") {
     return mockResponse(config, 202, { status: "accepted", message: "Analysis started", data: { job_id: generateId("job") } });
   }
 
-  if (url.match(/^\/api\/videos\/[\w-]+\/highlights$/) && method === "GET") {
-    const videoId = url.split("/")[4];
+  if (url.match(/^\/videos\/[\w-]+\/highlights$/) && method === "GET") {
+    const videoId = url.split("/")[3];
     const highlights = mockHighlights[videoId] || [];
     return mockResponse(config, 200, { status: "success", data: { video_id: videoId, highlights, total: highlights.length } });
   }
 
-  if (url.match(/^\/api\/videos\/[\w-]+$/) && method === "DELETE") {
+  if (url.match(/^\/videos\/[\w-]+$/) && method === "DELETE") {
     return mockResponse(config, 200, { status: "success", data: { message: "Video deleted successfully" } });
   }
 
   // ── Clips ──
-  if (url === "/api/clips/generate" && method === "POST") {
+  if (url === "/clips/generate" && method === "POST") {
     const body = JSON.parse(config.data || "{}");
     const clip: Clip = {
       id: generateId("clip"), video_id: body.video_id, highlight_id: body.highlight_id, user_id: "user_demo_001",
@@ -268,29 +283,29 @@ async function handleMockRoute(config: InternalAxiosRequestConfig): Promise<any>
     });
   }
 
-  if (url === "/api/clips" && method === "GET") {
+  if (url === "/clips" && method === "GET") {
     const videoId = config.params?.video_id;
     const clips = videoId ? mockClips.filter((c) => c.video_id === videoId) : mockClips;
     return mockResponse(config, 200, { status: "success", data: { clips, total: clips.length } });
   }
 
-  if (url.match(/^\/api\/clips\/[\w-]+$/) && method === "GET") {
+  if (url.match(/^\/clips\/[\w-]+$/) && method === "GET") {
     const clipId = url.split("/").pop()!;
     const clip = mockClips.find((c) => c.id === clipId);
     if (!clip) return mockResponse(config, 404, { status: "error", message: "Clip not found" });
     return mockResponse(config, 200, { status: "success", data: { clip } });
   }
 
-  if (url.match(/^\/api\/clips\/[\w-]+$/) && method === "DELETE") {
+  if (url.match(/^\/clips\/[\w-]+$/) && method === "DELETE") {
     return mockResponse(config, 200, { status: "success", data: { message: "Clip deleted successfully" } });
   }
 
-  if (url.match(/^\/api\/download\/[\w-]+$/) && method === "GET") {
+  if (url.match(/^\/download\/[\w-]+$/) && method === "GET") {
     return mockResponse(config, 200, new Blob(["mock video content"], { type: "video/mp4" }));
   }
 
   // ── Admin ──
-  if (url === "/api/admin/jobs" && method === "GET") {
+  if (url === "/admin/jobs" && method === "GET") {
     return mockResponse(config, 200, {
       status: "success",
       data: {
@@ -302,7 +317,7 @@ async function handleMockRoute(config: InternalAxiosRequestConfig): Promise<any>
     });
   }
 
-  if (url === "/api/admin/users" && method === "GET") {
+  if (url === "/admin/users" && method === "GET") {
     const mockUsers = [
       { id: "user_demo_001", email: "demo@test.com", name: "Demo User", role: "admin", created_at: new Date(Date.now() - 86400000 * 30).toISOString() },
       { id: "user_admin_001", email: "admin@cliphunter.ai", name: "System Admin", role: "admin", created_at: new Date(Date.now() - 86400000 * 60).toISOString() },
@@ -312,7 +327,7 @@ async function handleMockRoute(config: InternalAxiosRequestConfig): Promise<any>
     return mockResponse(config, 200, { status: "success", data: { users: mockUsers, total: mockUsers.length } });
   }
 
-  if (url === "/api/admin/storage" && method === "GET") {
+  if (url === "/admin/storage" && method === "GET") {
     return mockResponse(config, 200, {
       status: "success",
       data: {
@@ -323,7 +338,7 @@ async function handleMockRoute(config: InternalAxiosRequestConfig): Promise<any>
     });
   }
 
-  if (url === "/api/admin/analytics" && method === "GET") {
+  if (url === "/admin/analytics" && method === "GET") {
     return mockResponse(config, 200, {
       status: "success",
       data: {
