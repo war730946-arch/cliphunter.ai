@@ -11,7 +11,7 @@
  */
 
 import api from "./api";
-import type { AxiosRequestConfig } from "axios";
+import type { InternalAxiosRequestConfig, AxiosResponse } from "axios";
 import type { Video, Highlight, Clip, Job, User } from "@/types";
 
 let initialized = false;
@@ -126,18 +126,19 @@ const mockJobs: Job[] = [
 ];
 
 // ─── Build mock response ────────────────────────────────
-function mockResponse(config: AxiosRequestConfig, status: number, data: any) {
+function mockResponse(config: InternalAxiosRequestConfig, status: number, data: any): AxiosResponse {
   return {
     data,
     status,
     statusText: status === 200 ? "OK" : status === 201 ? "Created" : status === 404 ? "Not Found" : "Error",
     headers: { "content-type": "application/json" },
     config,
+    request: undefined,
   };
 }
 
 // ─── Route handler ───────────────────────────────────────
-async function handleMockRoute(config: AxiosRequestConfig): Promise<any> {
+async function handleMockRoute(config: InternalAxiosRequestConfig): Promise<any> {
   const url = config.url || "";
   const method = (config.method || "get").toUpperCase();
 
@@ -355,7 +356,7 @@ export function setupMockApi() {
   // This completely prevents any actual HTTP request from being made,
   // which means NO CORS preflight requests = no CORS errors.
   api.interceptors.request.use(
-    async (config: AxiosRequestConfig) => {
+    async (config: InternalAxiosRequestConfig) => {
       const mockResult = await handleMockRoute(config);
       if (mockResult) {
         // Override the adapter to return our mock data immediately.
