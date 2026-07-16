@@ -88,7 +88,7 @@ export class TranscriptionService {
         }
 
         await execAsync(
-          `curl -fsSL --retry 3 --connect-timeout 30 -o "${zipPath}" "${modelUrl}"`,
+          `wget -q --retry-connrefused --tries=3 --timeout=30 -O "${zipPath}" "${modelUrl}"`,
           300000
         );
         await execAsync(`unzip -q "${zipPath}" -d "${MODELS_DIR}" && rm "${zipPath}"`, 60000);
