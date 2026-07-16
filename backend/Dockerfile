@@ -4,7 +4,7 @@
 # ────────────────────────────────────────────────────────────────
 
 # ── Stage 1: Builder ────────────────────────────────────────────
-FROM node:22-slim AS builder
+FROM node:20-slim AS builder
 
 WORKDIR /build
 
@@ -28,7 +28,7 @@ COPY src ./src/
 RUN npm run build
 
 # ── Stage 2: Runtime ────────────────────────────────────────────
-FROM node:22-slim
+FROM node:20-slim
 
 WORKDIR /app
 
