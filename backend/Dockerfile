@@ -8,9 +8,12 @@ FROM node:22-slim AS builder
 
 WORKDIR /build
 
-# System deps needed for Prisma generate
+# System deps needed for Prisma generate + native modules (ffi-napi, vosk, etc.)
 RUN apt-get update && apt-get install -y \
     openssl \
+    python3 \
+    make \
+    g++ \
     && rm -rf /var/lib/apt/lists/*
 
 COPY package*.json ./
