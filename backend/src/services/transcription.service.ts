@@ -72,18 +72,36 @@ export class TranscriptionService {
 
   /**
    * Initialize the Vosk model.
-   * Called once when the server starts. Gracefully skips if model files
-   * are not found — transcription will fail with a clear error later.
+   * Called once when the server starts. Auto-downloads the model if not found.
    */
   async initialize(): Promise<void> {
     const modelPath = getModelPath();
     if (!fs.existsSync(modelPath)) {
-      logger.warn(
-        `Vosk model not found at ${modelPath}. ` +
-          `Download from https://alphacephei.com/vosk/models/vosk-model-small-en-us-0.15.zip ` +
-          `and extract to backend/models/`
-      );
-      return;
+      logger.info(`Vosk model not found at ${modelPath}. Attempting to download...`);
+      try {
+        const modelName = process.env.VOSK_MODEL || "vosk-model-small-en-us-0.15";
+        const modelUrl = `https://alphacephei.com/vosk/models/${modelName}.zip`;
+        const zipPath = path.join(MODELS_DIR, `${modelName}.zip`);
+
+        if (!fs.existsSync(MODELS_DIR)) {
+          fs.mkdirSync(MODELS_DIR, { recursive: true });
+        }
+
+        await execAsync(
+          `curl -fsSL --retry 3 --connect-timeout 30 -o "${zipPath}" "${modelUrl}"`,
+          300000
+        );
+        await execAsync(`unzip -q "${zipPath}" -d "${MODELS_DIR}" && rm "${zipPath}"`, 60000);
+        logger.info(`✅ Vosk model downloaded and extracted to ${MODELS_DIR}`);
+      } catch (err) {
+        logger.error(`Failed to download Vosk model: ${err}`);
+        logger.warn(
+          `Transcription will not be available. Download manually from ` +
+            `https://alphacephei.com/vosk/models/vosk-model-small-en-us-0.15.zip ` +
+            `and extract to ${MODELS_DIR}`
+        );
+        return;
+      }
     }
 
     try {

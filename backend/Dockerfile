@@ -46,14 +46,9 @@ RUN apt-get update && apt-get install -y \
     unzip \
     && rm -rf /var/lib/apt/lists/*
 
-# Download the small English Vosk model (~42 MB) at build time
-# Use curl with retries since wget can have SSL issues in some build environments
-RUN mkdir -p /app/models && \
-    curl -fsSLO --retry 3 --connect-timeout 30 \
-      https://alphacephei.com/vosk/models/vosk-model-small-en-us-0.15.zip \
-      -o /tmp/vosk-model.zip && \
-    unzip -q /tmp/vosk-model.zip -d /app/models/ && \
-    rm /tmp/vosk-model.zip
+# Vosk model will be downloaded at runtime by the transcription service
+# if not present. This avoids build-time download failures.
+RUN mkdir -p /app/models
 
 # Copy compiled artifacts and dependencies from builder
 COPY --from=builder /build/dist ./dist
