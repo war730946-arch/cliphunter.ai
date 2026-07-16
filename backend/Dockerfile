@@ -65,7 +65,7 @@ RUN mkdir -p /app/uploads /app/generated-clips && chmod 755 /app/uploads /app/ge
 EXPOSE 5000
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-  CMD node -e "fetch('http://localhost:5000/health').then(r=>r.json()).then(d=>process.exit(d.status==='ok'?0:1)).catch(()=>process.exit(1))"
+  CMD node -e "var p=process.env.PORT||5000;fetch('http://localhost:'+p+'/health').then(r=>r.json()).then(d=>process.exit(d.status==='ok'?0:1)).catch(function(){process.exit(1)})"
 
 # Run migrations on startup, then start the server
 # Note: prisma CLI is available in node_modules from the builder stage

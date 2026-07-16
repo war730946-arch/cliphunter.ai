@@ -1,0 +1,45 @@
+# ─── ClipHunter AI — Render Blueprint ────────────────────
+# Deploy both frontend (Next.js) and backend (Docker) on Render's free tier
+# ────────────────────────────────────────────────────────
+
+services:
+  # ── Backend API (Express + FFmpeg + Vosk) ──────────────
+  - type: web
+    name: cliphunter-ai-backend
+    env: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    plan: free
+    envVars:
+      - key: PORT
+        value: 5000
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        value: file:./prisma/dev.db
+      - key: JWT_SECRET
+        sync: false  # ⚠️ You MUST set this in the Render Dashboard after deploy
+      - key: JWT_EXPIRES_IN
+        value: 7d
+      - key: VOSK_MODEL
+        value: vosk-model-small-en-us-0.15
+      - key: LOG_LEVEL
+        value: info
+    healthCheckPath: /health
+
+  # ── Frontend (Next.js) ─────────────────────────────────
+  - type: web
+    name: cliphunter-ai-frontend
+    env: node
+    rootDirectory: frontend
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    healthCheckPath: /
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NEXT_PUBLIC_USE_MOCK
+        value: "true"
+      - key: NEXT_PUBLIC_API_URL
+        sync: false  # ⚠️ Set this to your backend URL after deploy (e.g. https://cliphunter-ai-backend.onrender.com/api)
