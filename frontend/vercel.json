@@ -4,7 +4,7 @@
   "outputDirectory": ".next",
   "installCommand": "npm install",
   "env": {
-    "NEXT_PUBLIC_API_URL": "https://YOUR-RAILWAY-URL.up.railway.app/api",
-    "NEXT_PUBLIC_USE_MOCK": "true"
+    "NEXT_PUBLIC_API_URL": "https://backend-production-92ea.up.railway.app/api",
+    "NEXT_PUBLIC_USE_MOCK": "false"
   }
 }
