@@ -24,9 +24,13 @@ app.use(helmet());
 // Trust the first proxy (Nginx) so req.ip reflects real client IP for rate limiting
 app.set("trust proxy", ["loopback", "linklocal", "uniquelocal"]);
 
+const corsOrigin = process.env.CORS_ORIGIN
+  ? process.env.CORS_ORIGIN.split(",").map((o) => o.trim())
+  : ["http://localhost:3000"];
+
 app.use(
   cors({
-    origin: process.env.NODE_ENV === "production" ? false : ["http://localhost:3000"],
+    origin: corsOrigin,
     credentials: true,
   })
 );
